@@ -1,0 +1,63 @@
+# DIP를 이용한 코드로 간단한 TestCode를 짜보자
+
+CalculateDiscountService가 잘 동작 되는지 확인하려면 CustomerRepository와 RuleDiscounter를 구현한 객체가 필요하다. 
+이는 CustomerRepository와 RuleDiscounter가 인터페이스이기에 대역 객체를 사용해서 테스트를 쉽게 진행할 수 있다.
+
+- 대역 객체를 사용해서 Customer가 존재하지 않는 경우 이셉션이 발생하는지 검증하는 테스트 코드
+
+CalculateDiscountService
+```java
+  public class CalculateDiscountService{
+    private CustomerRepository customerRepository;
+    private RuleDiscounter ruleDiscounter;
+    
+    public CalculateDiscountService(CustomerRepository customerRepository, RuleDiscounter ruleDiscounter){
+      this.customerRepository = customerRepository;
+      this.ruleDiscounter = ruleDicounter;
+    } 
+    
+    public Money calculateDiscount(List<OrderLine> orderLines, String customerId){
+      Customer customer = findCustomer(customerId);
+      return ruleDiscounter.applyRules(customer, orderLines);
+    }
+    
+    public Customer findCustomer(String customerId){
+      Customer customer = customerRepository.findById(customerId);
+      if(customer == null) throw new NoCustomerException();
+      return customer;
+    }
+    
+    ....
+  }
+```
+
+CalculateDiscountServiceTest
+```java
+public class CalculateDiscountServiceTest{
+
+  @Test
+  public void noCustomer_thenExceptionShouldBeThrown(){
+    //테스트 목적의 대역 객체
+    CustomerRepository stubRepo = mock(CustomerRepository.class);
+    when(stubRepo.findById("noCustId")).thenReturn(null);
+    
+    RuleDiscounter stubRule = (cust, lines) -> null;
+    
+    //대용 객체를 주입 받아 테스트 진행
+    CalculateDiscountService calculateDiscountService 
+              = new CalculateDiscountService(stubRepo, stubRule);
+    assertThrows(NoCustomerException.class,
+              () -> calculateDiscountService.calculateDiscount(someLines, "noCustId"));
+  }
+  
+}
+```
+위 테스트 코드는 구현체가 없어도 CalculateDiscountService를 테스트할 수 있음을 보여준다. 
+
+
+
+
+
+
+
+
